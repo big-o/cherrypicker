@@ -1,0 +1,5 @@
+__version__ = '0.0.0'
+__name__ = 'cherrypicker'
+__title__ = 'CherryPicker'
+__description__ = 'Pluck and flatten complex data.'
+__url__ = 'https://github.com/big-o/cherrypicker'
