@@ -44,7 +44,7 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3'
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5'
     ],
     keywords='cherrypicker etl data',
@@ -53,6 +53,6 @@ setup(
     install_requires=requirements,
     extras_require={
         'dev': ['check-manifest'],
-        'test': ['coverage'],
+        'test': ['coverage', 'pytest'],
     }
 )
