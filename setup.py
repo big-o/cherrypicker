@@ -52,7 +52,13 @@ setup(
     python_requires='>=3.5',
     install_requires=requirements,
     extras_require={
-        'dev': ['check-manifest'],
-        'test': ['coverage', 'pytest'],
+        'dev': [
+            'check-manifest'
+        ],
+        'test': [
+            'coverage',
+            'pytest',
+            'pytest-cov'
+        ],
     }
 )

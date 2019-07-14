@@ -29,11 +29,12 @@ class CherryPicker(object):
         return picker
 
     def __init__(self, obj, on_missing='ignore', on_leaf='raise',
-                 on_error='ignore'):
+                 on_error='ignore', default=None):
         self._opts = {
             'on_missing': on_missing,
             'on_leaf': on_leaf,
-            'on_error': on_error
+            'on_error': on_error,
+            'default': default
         }
         self._repr = None
 
@@ -65,15 +66,6 @@ class CherryPicker(object):
     def __getitem__(self, args):
         raise NotImplementedError()
 
-    def __repr__(self):
-        if self._repr is not None:
-            return self._repr
-
-        self._repr = '<{}({})>'.format(self.__class__.__name__,
-                self._obj.__class__.__name__)
-
-        return self._repr
-
     def _make_child(self, obj):
         cls = CherryPicker._get_cherry_class(obj)
 
@@ -84,6 +76,8 @@ class CherryPickerTraversable(CherryPicker):
     """
     Abstract class for traversable (mappable and/or iterable) nodes.
     """
+
+    _RE_ERR = type(re.error(''))
 
     def __call__(self, *args, **kwargs):
         """
@@ -98,7 +92,7 @@ class CherryPickerTraversable(CherryPicker):
         return len(self._obj)
 
     def filter(self, how='all', allow_wildcards=True, case_sensitive=True,
-                 regex=False, default=None, **predicates):
+                 regex=False, **predicates):
         """
         Return a filtered view of the child nodes. This method is usually
         accessed via :meth:`CherryPicker.__call__`
@@ -166,9 +160,6 @@ class CherryPickerTraversable(CherryPicker):
                 patterns in your predicates instead. All regular expressions
                 will be compared to string values using a full match.
         :type regex: bool, default = False.
-        :param default: The item to return if the object is Mappable and does
-                not pass the filter predicates.
-        :type default: object, default = None.
         :param predicates: Keyword arguments where the keys are the object keys
                 used to get the comparison value, and the values are either a
                 value to compare, a regular expression to perform a full match
@@ -189,11 +180,11 @@ class CherryPickerTraversable(CherryPicker):
 
         return self._make_child(
             self._filter(self._obj, how, allow_wildcards, case_sensitive,
-                         regex, default, **predicates)
+                         regex, **predicates)
         )
 
     def _filter(self, obj, how, allow_wildcards, case_sensitive, regex,
-                default=None, **predicates):
+                **predicates):
         raise NotImplementedError()
 
     def _filter_item(self, obj, how, allow_wildcards, case_sensitive, regex,
@@ -205,6 +196,7 @@ class CherryPickerTraversable(CherryPicker):
                         '`{}` node does not exist'.format(node)
                     )
                 res = False
+
             else:
                 val = obj[node]
                 res = False
@@ -227,6 +219,11 @@ class CherryPickerTraversable(CherryPicker):
                             res = pred == val
                     else:
                         res = pred == val
+
+                except self._RE_ERR as e:
+                    # Invalid regex. Always raise.
+                    raise
+
                 except Exception as e:
                     if self._opts['on_error'] == 'raise':
                         raise
@@ -246,7 +243,7 @@ class CherryPickerTraversable(CherryPicker):
         raise NotImplementedError()
 
     def _filter(self, obj, how, allow_wildcards, case_sensitive, regex,
-                default=None, **predicates):
+                **predicates):
         raise NotImplementedError()
 
 
@@ -285,7 +282,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         :return: A view of the object's keys.
         :rtype: list
         """
-        return sorted(self._obj.keys())
+        return self._obj.keys()
 
     def values(self, peek=None):
         """
@@ -295,7 +292,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         :return: A view of the object's values.
         :rtype: list
         """
-        return sorted(self._obj.values())
+        return self._obj.values()
 
     def items(self, peek=None):
         """
@@ -305,7 +302,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         :return: A view of the object's items.
         :rtype: list
         """
-        return sorted(self._obj.items())
+        return self._obj.items()
 
     def __getitem__(self, args):
         if isinstance(args, tuple):
@@ -327,12 +324,12 @@ class CherryPickerMapping(CherryPickerTraversable):
         return self._repr
 
     def _filter(self, obj, how, allow_wildcards, case_sensitive, regex,
-                default=None, **predicates):
+                **predicates):
         if self._filter_item(obj, how, allow_wildcards, case_sensitive,
                              regex, **predicates):
             return obj
         else:
-            return default
+            return self._opts['default']
 
 
 class CherryPickerIterable(CherryPickerTraversable):
@@ -385,17 +382,16 @@ class CherryPickerIterable(CherryPickerTraversable):
             # Always create lists for better pandas/numpy integration
             if isinstance(args, tuple):
                 return self._make_child([
-                            [obj.__getitem__(arg) for arg in args]
+                            [obj.__getitem__(arg)
+                             if arg in obj else self._opts['default']
+                             for arg in args]
                             for obj in self._obj])
             else:
                 return self._make_child([obj.__getitem__(args)
+                                         if args in obj
+                                         else self._opts['default']
                                          for obj in self._obj])
         else:
-            if isinstance(args, tuple):
-                raise ValueError(
-                    'Can only apply a single index or slice to an iterable'
-                )
-
             return self._make_child(self._obj.__getitem__(args))
 
     def __repr__(self):
@@ -408,6 +404,6 @@ class CherryPickerIterable(CherryPickerTraversable):
         return self._repr
 
     def _filter(self, obj, how, allow_wildcards, case_sensitive, regex,
-                default=None, **predicates):
+                **predicates):
         return [item for item in obj if self._filter_item(item, how,
                 allow_wildcards, case_sensitive, regex, **predicates)]

@@ -1,11 +1,6 @@
-class CherryPickerError(object):
+class CherryPickerError(Exception):
     """
     A generic cherrypicker error.
-    """
-
-class LeafError(CherryPickerError):
-    """
-    Raised when attempting a node traversal operation on a leaf.
     """
 
 
