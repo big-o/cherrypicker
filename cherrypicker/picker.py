@@ -1,3 +1,6 @@
+from .exceptions import *
+from .util import OrderedSet
+
 from collections.abc import Callable, Iterable, Mapping
 from fnmatch import fnmatchcase
 import re
@@ -26,6 +29,17 @@ class CherryPicker(object):
             ``ignore`` will just mean the filter operation returns False, and
             ``raise`` will mean the error is raised.
     :type on_error: str, default = ``ignore``
+    :param on_leaf: Action to perform when calling :meth:`__getitem__` on a
+            leaf node. ``raise`` will cause a
+            :class:`cherrypicker.exceptions.LeafError`` to be raised. ``get``
+            will return the result of :meth:`__getitem__` on the wrapped item.
+    :type on_leaf: str, default = ``raise``.
+    :param leaf_types:  By default, anything doesn't have an Iterable or
+            Mapping interface will be treated as a leaf. Any classes specifed
+            in this parameter will also be treated as leaves regardless of any
+            interfaces they conform to. ``leaf_types`` may be a class, a method
+            that resolves to True if an object passed to it should be treated
+            as a leaf, or a tuple of classes/methods.
     :param default: The item to return when extracting an attribute that does
             not exist from an object.
     :type default: object, default = None
@@ -76,6 +90,8 @@ class CherryPicker(object):
     """
 
     _PRED_RULES = 'all', 'any'
+    _DEFAULT_LEAF_TYPES = (str, bytes)
+    _DEFAULT_LEAF_FUNCS = tuple()
 
     def __new__(cls, obj, **kwargs):
         ccls = cls._get_cherry_class(obj)
@@ -83,25 +99,71 @@ class CherryPicker(object):
         return picker
 
     def __init__(self, obj, on_missing='ignore', on_error='ignore',
+                 on_leaf='raise',
+                 leaf_types=_DEFAULT_LEAF_TYPES+_DEFAULT_LEAF_FUNCS,
                  default=None):
+
+        # Anything that gets shared with children goes in here.
         self._opts = {
             'on_missing': on_missing,
             'on_error': on_error,
-            'default': default
+            'on_leaf': on_leaf,
+            'default': default,
+            'leaf_types': leaf_types
         }
+
+        # Properties that are unique to this instance.
         self._repr = None
 
+        self._leaf_types, self._leaf_funcs = self._parse_leaf_types(leaf_types)
         self._parent = None
         self._obj = obj
 
-    @classmethod
-    def _get_cherry_class(cls, obj):
-        if isinstance(obj, Mapping):
-            ccls = CherryPickerMapping
-        elif isinstance(obj, str) or not isinstance(obj, Iterable):
-            ccls = CherryPickerLeaf
+    def _parse_leaf_types(self, leaf_types):
+        if leaf_types is None:
+            _leaf_types = tuple()
+            _leaf_funcs = tuple()
         else:
+            try:
+                _leaf_types = tuple(leaf for leaf in leaf_types
+                                    if isinstance(leaf, type))
+
+                _leaf_funcs = tuple(leaf for leaf in leaf_types
+                                    if leaf not in _leaf_types)
+
+                if any([not hasattr(func, '__call__')
+                        for func in _leaf_funcs]):
+                    raise ValueError(
+                        'leaf_types must only contain types and Callables.'
+                    )
+
+            except TypeError:
+                if isinstance(leaf_types, type):
+                    _leaf_types = (leaf_types,)
+                    _leaf_funcs = tuple()
+                elif hasattr(leaf_types, '__call__'):
+                    _leaf_types = tuple()
+                    _leaf_funcs = (leaf_types,)
+                else:
+                    raise ValueError(
+                        'leaf_types must only contain types and Callables.'
+                    )
+
+        return _leaf_types, _leaf_funcs
+
+    @classmethod
+    def _get_cherry_class(cls, obj, leaf_types=_DEFAULT_LEAF_TYPES,
+                          leaf_funcs=_DEFAULT_LEAF_FUNCS):
+        if isinstance(obj, leaf_types):
+            ccls = CherryPickerLeaf
+        elif any([func(obj) for func in leaf_funcs]):
+            ccls = CherryPickerLeaf
+        elif isinstance(obj, Mapping):
+            ccls = CherryPickerMapping
+        elif isinstance(obj, Iterable):
             ccls = CherryPickerIterable
+        else:
+            ccls = CherryPickerLeaf
         return ccls
 
     @property
@@ -109,7 +171,17 @@ class CherryPicker(object):
         return False
 
     @property
+    def parents(self):
+        """
+        Alias for :meth:`.parent`.
+        """
+        return self.parent
+
+    @property
     def parent(self):
+        """
+        Get the parent or iterable of parents.
+        """
         if self._parent is not None:
             return self._parent
         raise AttributeError('Root node has no parent.')
@@ -127,7 +199,7 @@ class CherryPicker(object):
         raise NotImplementedError()
 
     def _make_child(self, obj):
-        cls = CherryPicker._get_cherry_class(obj)
+        cls = self._get_cherry_class(obj, self._leaf_types, self._leaf_funcs)
 
         child = cls(obj, **self._opts)
         child._parent = self
@@ -140,6 +212,10 @@ class CherryPickerTraversable(CherryPicker):
     """
 
     _RE_ERR = type(re.error(''))
+
+    def __new__(cls, obj, **kwargs):
+        picker = super(CherryPicker, cls).__new__(cls)
+        return picker
 
     def __call__(self, *args, **kwargs):
         """
@@ -240,6 +316,9 @@ class CherryPickerTraversable(CherryPicker):
             raise ValueError(
                     '`how` parameter must be one of {}'.format(self._PRED_RULES))
 
+        if len(predicates) == 0:
+            return self
+
         return self._make_child(
             self._filter(self._obj, how, allow_wildcards, case_sensitive,
                          regex, **predicates)
@@ -317,9 +396,18 @@ class CherryPickerLeaf(CherryPicker):
     return a result (with :meth:`.get`).
     """
 
+    def __new__(cls, obj, **kwargs):
+        picker = super(CherryPicker, cls).__new__(cls)
+        return picker
+
     @property
     def is_leaf(self):
         return True
+
+    def __getitem__(self, item):
+        if self._opts['on_leaf'] == 'raise':
+            raise LeafError()
+        return self._obj.__getitem__(item)
 
     def __repr__(self):
         if self._repr is not None:
@@ -335,6 +423,10 @@ class CherryPickerMapping(CherryPickerTraversable):
     """
     A mappable (key->value pairs) object to be cherry picked from.
     """
+
+    def __new__(cls, obj, **kwargs):
+        picker = super(CherryPicker, cls).__new__(cls)
+        return picker
 
     def keys(self, peek=None):
         """
@@ -399,6 +491,10 @@ class CherryPickerIterable(CherryPickerTraversable):
     A collection of objects to be cherry picked.
     """
 
+    def __new__(cls, obj, **kwargs):
+        picker = super(CherryPicker, cls).__new__(cls)
+        return picker
+
     def keys(self, peek=5):
         """
         :param peek: The maximum number of items in the iterable to inspect in
@@ -442,17 +538,19 @@ class CherryPickerIterable(CherryPickerTraversable):
 
         if propagate:
             # Always create lists for better pandas/numpy integration
-            if isinstance(args, tuple):
-                return self._make_child([
-                            [obj.__getitem__(arg)
-                             if arg in obj else self._opts['default']
-                             for arg in args]
-                            for obj in self._obj])
-            else:
-                return self._make_child([obj.__getitem__(args)
-                                         if args in obj
-                                         else self._opts['default']
-                                         for obj in self._obj])
+            extracts = []
+            parents = OrderedSet(key=id)
+            for obj in self._obj:
+                cobj = self._make_child(obj)
+                extracts.append(cobj.__getitem__(args).get())
+                parents.add(obj)
+
+            result = self._make_child(extracts)
+
+            # Results are grandchildren, not children
+            result._parent = self._make_child(parents)
+
+            return result
         else:
             return self._make_child(self._obj.__getitem__(args))
 
@@ -460,8 +558,12 @@ class CherryPickerIterable(CherryPickerTraversable):
         if self._repr is not None:
             return self._repr
 
-        self._repr = '<{}({}, len={})>'.format(self.__class__.__name__,
-                self._obj.__class__.__name__, len(self._obj))
+        try:
+            self._repr = '<{}({}, len={})>'.format(self.__class__.__name__,
+                    self._obj.__class__.__name__, len(self._obj))
+        except AttributeError:
+            self._repr = '<{}({})>'.format(self.__class__.__name__,
+                    self._obj.__class__.__name__))
 
         return self._repr
 
