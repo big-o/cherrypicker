@@ -91,6 +91,7 @@ class CherryPicker(object):
         }
         self._repr = None
 
+        self._parent = None
         self._obj = obj
 
     @classmethod
@@ -107,6 +108,12 @@ class CherryPicker(object):
     def is_leaf(self):
         return False
 
+    @property
+    def parent(self):
+        if self._parent is not None:
+            return self._parent
+        raise AttributeError('Root node has no parent.')
+
     def get(self):
         """
         Obtain the original data that this object wraps.
@@ -122,7 +129,9 @@ class CherryPicker(object):
     def _make_child(self, obj):
         cls = CherryPicker._get_cherry_class(obj)
 
-        return cls(obj, **self._opts)
+        child = cls(obj, **self._opts)
+        child._parent = self
+        return child
 
 
 class CherryPickerTraversable(CherryPicker):

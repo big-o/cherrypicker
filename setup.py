@@ -53,7 +53,9 @@ setup(
     install_requires=requirements,
     extras_require={
         'dev': [
-            'check-manifest'
+            'check-manifest',
+            'sphinx',
+            'sphinx_rtd_theme'
         ],
         'test': [
             'coverage',
