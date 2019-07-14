@@ -1,5 +1,4 @@
 from cherrypicker import CherryPicker
-from cherrypicker.exceptions import *
 import json
 import os
 import pytest
@@ -129,7 +128,7 @@ def test_misc():
     with pytest.raises(ValueError):
         picker(city='A*', how=None)
 
-    with pytest.raises(MissingNodeError):
+    with pytest.raises(AttributeError):
         picker(notanode=123)
 
     with pytest.raises(type(re.error(''))):

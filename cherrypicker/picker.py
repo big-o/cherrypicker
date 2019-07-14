@@ -1,5 +1,3 @@
-from .exceptions import *
-
 from collections.abc import Callable, Iterable, Mapping
 from fnmatch import fnmatchcase
 import re
@@ -18,7 +16,63 @@ class CherryPicker(object):
     wraps the resulting data from that operation. To get the wrapped data back,
     use the :meth:`CherryPicker.get` method.
 
-    Filter operations are applied with parentheses.
+    :param obj: The data to operate on.
+    :type obj: object.
+    :param on_missing: Action to perform when trying to get an attribute that
+            doesn't exist from an object with a Mapping interface. ``ignore``
+            will do nothing, ``raise`` will raise an :class:`AttributeError`.
+    :type on_missing: str, default = ``ignore``.
+    :param on_error: Action to perform if an error occurs during filtering.
+            ``ignore`` will just mean the filter operation returns False, and
+            ``raise`` will mean the error is raised.
+    :type on_error: str, default = ``ignore``
+    :param default: The item to return when extracting an attribute that does
+            not exist from an object.
+    :type default: object, default = None
+
+    :Examples:
+
+    Data extraction may be done with the getitem interface. Let's say we have a
+    list of objects and we want to get a flat list of the ``name`` attributes
+    for each item in the list:
+
+    >>> data = [ { 'name': 'Alice', 'age': 20}, { 'name': 'Bob', 'age': 30 } ]
+    >>> picker = CherryPicker(data)
+    >>> picker['name'].get()
+    ['Alice', 'Bob']
+
+    We can also request multiple attributes for each item to produce a flat
+    table:
+
+    >>> data = [ { 'name': 'Alice', 'age': 20}, { 'name': 'Bob', 'age': 30 } ]
+    >>> picker = CherryPicker(data)
+    >>> picker['name', 'age'].get()
+    [['Alice', 20], ['Bob', 30]]
+
+    Filter operations are applied with parentheses. For example, to get every
+    ``name`` attribute from each item in a list called ``data``:
+
+    >>> data = [ { 'name': 'Alice', 'age': 20}, { 'name': 'Bob', 'age': 30 } ]
+    >>> picker = CherryPicker(data)
+    >>> picker(name='Alice')['age'].get()
+    [30]
+
+    Multiple filters may be provided:
+
+    >>> data = [ { 'name': 'Alice', 'age': 20}, { 'name': 'Bob', 'age': 30 } ]
+    >>> picker = CherryPicker(data)
+    >>> picker(name='Alice' age=lambda x: x>10, how='any').get()
+    [{'name': 'Alice', 'age': 20}, {'name': 'Bob', 'age': 30}]
+
+    Filters can also be chained:
+
+    >>> data = [ { 'name': 'Alice', 'age': 20}, { 'name': 'Bob', 'age': 30 } ]
+    >>> picker = CherryPicker(data)
+    >>> picker(age=lambda x: x>10)(name='B*')['name'].get()
+    ['Bob']
+
+
+    See :meth:`CherryPicker.filter` for more filtering options.
     """
 
     _PRED_RULES = 'all', 'any'
@@ -28,11 +82,10 @@ class CherryPicker(object):
         picker = super(CherryPicker, cls).__new__(ccls)
         return picker
 
-    def __init__(self, obj, on_missing='ignore', on_leaf='raise',
-                 on_error='ignore', default=None):
+    def __init__(self, obj, on_missing='ignore', on_error='ignore',
+                 default=None):
         self._opts = {
             'on_missing': on_missing,
-            'on_leaf': on_leaf,
             'on_error': on_error,
             'default': default
         }
@@ -189,16 +242,16 @@ class CherryPickerTraversable(CherryPicker):
 
     def _filter_item(self, obj, how, allow_wildcards, case_sensitive, regex,
                      **predicates):
-        for node, pred in predicates.items():
-            if node not in obj:
+        for attr, pred in predicates.items():
+            if attr not in obj:
                 if self._opts['on_missing'] == 'raise':
-                    raise MissingNodeError(
-                        '`{}` node does not exist'.format(node)
+                    raise AttributeError(
+                        '`{}` attribute does not exist'.format(attr)
                     )
                 res = False
 
             else:
-                val = obj[node]
+                val = obj[attr]
                 res = False
                 try:
                     if isinstance(pred, Callable):
@@ -249,7 +302,7 @@ class CherryPickerTraversable(CherryPicker):
 
 class CherryPickerLeaf(CherryPicker):
     """
-    A non-traversable node (end-point).
+    A non-traversable node (an end-point).
 
     This class cannot perform filter or extract operations; it only exists to
     return a result (with :meth:`.get`).
@@ -271,7 +324,7 @@ class CherryPickerLeaf(CherryPicker):
 
 class CherryPickerMapping(CherryPickerTraversable):
     """
-    A mappable (key->value pairs) object to be cherry picked.
+    A mappable (key->value pairs) object to be cherry picked from.
     """
 
     def keys(self, peek=None):
