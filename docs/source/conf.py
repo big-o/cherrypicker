@@ -87,6 +87,13 @@ pygments_style = None
 #
 html_theme = 'sphinx_rtd_theme'
 
+def setup(app):
+    """Insert Google Analytics tracker
+    Based on this Stackoverflow suggestion: https://stackoverflow.com/a/41885884
+    """
+    app.add_javascript("https://www.googletagmanager.com/gtag/js?id=UA-143748897-1")
+    app.add_javascript("google_analytics_tracker.js")
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
