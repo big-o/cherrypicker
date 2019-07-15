@@ -1,4 +1,5 @@
 from cherrypicker import CherryPicker
+from cherrypicker.exceptions import *
 import json
 import os
 import pytest
@@ -9,11 +10,21 @@ def abs_path(path):
     return os.path.join(os.path.dirname(__file__), path)
 
 
+n_jobs = [None, 1, 2, -1]
+
 def test_mappable():
+    with pytest.raises(ValueError):
+        run_map_tests(0)
+
+    for n in n_jobs:
+        run_map_tests(n)
+
+
+def run_map_tests(n_jobs=None):
     data = json.load(open(abs_path('data/climate.json')))
     first = data[0]
 
-    picker = CherryPicker(first, on_error='raise')
+    picker = CherryPicker(first, n_jobs=n_jobs, on_error='raise')
     assert not picker.is_leaf
     assert picker['id'].is_leaf
 
@@ -30,10 +41,21 @@ def test_mappable():
     assert picker['city', 'id'].get() == [first['city'], first['id']]
     assert tuple(picker['city', 'id']) == (first['city'], first['id'])
 
+    picker = CherryPicker(first, n_jobs=n_jobs, on_missing='raise')
+    assert picker['id'].get() == first['id']
+    assert picker['city', 'id'].get() == [first['city'], first['id']]
 
 def test_iterable():
+    with pytest.raises(ValueError):
+        run_iter_tests(0)
+
+    for n in n_jobs:
+        run_iter_tests(n)
+
+
+def run_iter_tests(n_jobs=None):
     data = json.load(open(abs_path('data/climate.json')))
-    picker = CherryPicker(data, on_error='raise')
+    picker = CherryPicker(data, n_jobs=n_jobs, on_error='raise')
 
     assert not picker.is_leaf
     assert sorted(picker.keys()) == ['city', 'country', 'id', 'monthlyAvg']
@@ -50,11 +72,16 @@ def test_iterable():
     # Propagation hack
     data = [dict([(int(k), v) for k, v in d.items()])
             for d in json.load(open(abs_path('data/numbers.json')))]
-    picker = CherryPicker(data, on_missing='ignore')
+    picker = CherryPicker(data, n_jobs=n_jobs, on_missing='ignore')
 
     assert picker[0].get() == data[0]
+    assert picker[0, False].get() == data[0]
+    assert picker[0:2].get() == data[0:2]
     assert picker[0, True].get() == [data[0][0], None]
 
+    picker = CherryPicker(data, n_jobs=n_jobs, on_missing='raise')
+    with pytest.raises(IndexError):
+        picker[len(data)]
 
 def test_predicates_callable():
     data = json.load(open(abs_path('data/climate.json')))
@@ -150,3 +177,63 @@ def test_misc():
 
     picker = CherryPicker(data, on_error='raise', on_missing='ignore')
     assert picker(notanode=123).get() == []
+
+
+def test_leaf():
+    data = json.load(open(abs_path('data/climate.json')))
+    picker = CherryPicker(data, on_error='raise', on_missing='raise')
+    leaf = picker[0]['city']
+
+    assert leaf.get() == data[0]['city']
+    with pytest.raises(LeafError):
+        assert leaf['city']
+
+    picker = CherryPicker(data, on_leaf='ignore')
+    leaf = picker[0]['city']
+
+    assert leaf[0] == data[0]['city'][0]
+
+    assert not picker[0].is_leaf
+
+    picker = CherryPicker(data, leaf_types=(dict,))
+    assert picker[0].is_leaf
+    picker = CherryPicker(data, leaf_types=dict)
+    assert picker[0].is_leaf
+
+    picker = CherryPicker(data, leaf_types=(lambda lf: 'city' in lf,))
+    assert picker[0].is_leaf
+    picker = CherryPicker(data, leaf_types=lambda lf: 'city' in lf)
+    assert picker[0].is_leaf
+
+    with pytest.raises(ValueError):
+        picker = CherryPicker(data, leaf_types=(0,))
+    with pytest.raises(ValueError):
+        picker = CherryPicker(data, leaf_types=0)
+
+    def argh(x):
+        raise Exception()
+
+    # Errors in leaf functions should be silently resolved to false.
+    picker = CherryPicker(data,
+            leaf_types=(str, bytes, argh))
+    assert not picker[0].is_leaf
+
+    picker = CherryPicker(data, leaf_types=None)
+    assert not picker[0]['city'].is_leaf
+
+def test_parents():
+    data = json.load(open(abs_path('data/climate.json')))
+    picker = CherryPicker(data)
+
+    with pytest.raises(AttributeError):
+        picker.parent()
+
+    with pytest.raises(AttributeError):
+        picker.parents()
+
+    assert picker[0].parent() == picker
+    assert picker[0].parent() == picker[0].parents()
+
+    assert picker['monthlyAvg'][0].parents().get() == picker['monthlyAvg'].get()
+    assert picker['monthlyAvg'][0, True].parents().get() == picker['monthlyAvg'].get()
+    assert picker[0]['monthlyAvg'].parent()['city'].get() == picker[0]['city'].get()

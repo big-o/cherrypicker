@@ -26,10 +26,6 @@ class CherryPickerTraversable(CherryPicker):
 
     _RE_ERR = type(re.error(''))
 
-    def __new__(cls, obj, **kwargs):
-        picker = super(CherryPicker, cls).__new__(cls)
-        return picker
-
     def __call__(self, *args, opts=None, **kwargs):
         """
         Shortcut to :meth:`.filter`.
@@ -44,16 +40,9 @@ class CherryPickerTraversable(CherryPicker):
     def __len__(self):
         return len(self._obj)
 
-    def __getstate__(self):
-        return self.__dict__
-
-    def __setstate__(self, d):
-        self.__dict__ = d
-
     @classmethod
     def _make_child(cls, obj, parent):
-        ccls = cls._get_cherry_class(obj)
-
+        ccls = cls._get_cherry_class(obj, parent)
         if parent is not None:
             child = ccls(obj, **parent._opts)
         else:
@@ -392,7 +381,7 @@ class CherryPickerIterable(CherryPickerTraversable):
             if self._opts['on_missing'] == 'ignore':
                 return self._make_child([], self)
             else:
-                raise KeyError(args)
+                raise IndexError(args)
 
         propagate = None
         if isinstance(args, tuple):
@@ -492,10 +481,6 @@ class CherryPickerIterable(CherryPickerTraversable):
                     self._obj.__class__.__name__)
 
         return self._repr
-
-    def _self_iter(self, itr):
-        for item in itr:
-            yield self, item
 
     def _filter(self, how, allow_wildcards, case_sensitive, regex, opts=None,
                 **predicates):

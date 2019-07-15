@@ -36,7 +36,7 @@ class OrderedSet(collections.MutableSet):
         return len(self._map)
 
     def __contains__(self, item):
-        return self._get_key(key) in self._map
+        return self._get_key(item) in self._map
 
     def add(self, item):
         key = self._get_key(item)

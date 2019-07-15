@@ -1,7 +1,7 @@
 from __future__ import division
 
 from collections.abc import Iterable, Mapping
-import multiprocessing as mp
+from joblib import effective_n_jobs
 
 
 __all__ = (
@@ -139,15 +139,7 @@ class CherryPicker(object):
 
         self._leaf_types, self._leaf_funcs = self._parse_leaf_types(leaf_types)
 
-        if n_jobs is None:
-            self._effective_n_jobs = 1
-        elif n_jobs > 0:
-            self._effective_n_jobs = n_jobs
-        elif n_jobs == 0:
-            raise ValueError('n_jobs == 0 has no meaning.')
-        elif n_jobs < 0:
-            n_cpus = mp.cpu_count()
-            self._effective_n_jobs = n_cpus + 1 + n_jobs
+        self._effective_n_jobs = effective_n_jobs(n_jobs)
 
         self._parent = None
         self._obj = obj
@@ -185,17 +177,35 @@ class CherryPicker(object):
         return _leaf_types, _leaf_funcs
 
     @classmethod
-    def _get_cherry_class(cls, obj):
-        if isinstance(obj, cls._leaf_types):
-            ccls = cls._cherry_types['leaf']
-        elif any([func(obj) for func in cls._leaf_funcs]):
-            ccls = cls._cherry_types['leaf']
-        elif isinstance(obj, Mapping):
-            ccls = cls._cherry_types['mapping']
-        elif isinstance(obj, Iterable):
-            ccls = cls._cherry_types['iterable']
+    def _get_cherry_class(cls, obj, parent=None):
+        ccls = None
+        if parent is None:
+            leaf_types = cls._leaf_types
+            leaf_funcs = cls._leaf_funcs
         else:
+            leaf_types = parent._leaf_types
+            leaf_funcs = parent._leaf_funcs
+
+        if isinstance(obj, leaf_types):
             ccls = cls._cherry_types['leaf']
+        elif len(leaf_funcs) > 0:
+            for func in leaf_funcs:
+                try:
+                    if func(obj):
+                        ccls = cls._cherry_types['leaf']
+                        break
+                except:
+                    # TODO: Should we warn, or have a user-defined action?
+                    pass
+
+        if ccls is None:
+            if isinstance(obj, Mapping):
+                ccls = cls._cherry_types['mapping']
+            elif isinstance(obj, Iterable):
+                ccls = cls._cherry_types['iterable']
+            else:
+                ccls = cls._cherry_types['leaf']
+
         return ccls
 
     @classmethod
