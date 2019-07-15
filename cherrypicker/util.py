@@ -1,6 +1,11 @@
 import collections
 
 
+__all__ = (
+    'OrderedSet',
+)
+
+
 class OrderedSet(collections.MutableSet):
     """
     Set that remembers original insertion order.
@@ -15,8 +20,8 @@ class OrderedSet(collections.MutableSet):
 
     def __init__(self, iterable=None, key=None):
         self._end = end = []
-        end += [None, end, end]         # sentinel node for doubly linked list
-        self._map = {}                   # key --> [key, prev, next]
+        end += [None, end, end]     # sentinel node for doubly linked list
+        self._map = {}              # key --> [key, prev, next]
         self._key = key
         if iterable is not None:
             self |= iterable
