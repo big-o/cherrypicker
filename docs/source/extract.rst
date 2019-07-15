@@ -11,7 +11,7 @@ data from them into flat tables. These tables will always contain the values
 you have requested in a :class:`list` or nested lists. Lists are used to
 improve compatability with :mod:`pandas` and :mod:`numpy`.
 
-Much like :doc:`Filtering <filter.rst>`, extraction differs depending on the
+Much like :doc:`filtering <filter>`, extraction differs depending on the
 type of data node you are operating on:
 
 * If the data is :class:`dict`-like, values will be extracted from all the keys
@@ -26,6 +26,7 @@ is to enable the chaining of operations). At any stage in your cherry picking,
 you can get down to the raw data with the :meth:`CherryPicker.get()` operator:
 
 .. code-block:: python
+
     >>> picker = CherryPicker(data)
     >>> picker[0]['id', 'city']
     <CherryPickerIterable(list, len=2)>
@@ -40,6 +41,7 @@ first seems. What if you want to get the first item of a list? Well that's
 easy:
 
 .. code-block:: python
+
     >>> picker = CherryPicker(mylist)
     >>> picker
     <CherryPickerIterable(list, len=105)>
@@ -52,6 +54,7 @@ if you want multiple items. If you want to drill down and extract items from
 each item in the list, that's also easy enough:
 
 .. code-block:: python
+
     >>> picker['city']
     <CherryPickerIterable(list, len=105)>
 
@@ -70,6 +73,7 @@ parameter known as the *propagate* flag. If this flag is set to True, the
 picker will apply the index to each child node, regardless of what type it is:
 
 .. code-block:: python
+
     >>> mynestedlist = [['Alice', 20], ['Bob', 34], ...]
     >>> picker = CherryPicker(mynestedlist)
     >>> picker[0].get()

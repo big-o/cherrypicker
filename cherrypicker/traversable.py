@@ -1,14 +1,12 @@
 from __future__ import division
 
 from .picker import CherryPicker
-from .util import OrderedSet
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable
 from fnmatch import fnmatchcase
 from functools import partial
 from itertools import chain
-from joblib import Parallel, delayed, effective_n_jobs
-from pathos.multiprocessing import ProcessingPool as Pool
+from joblib import Parallel, delayed
 import re
 
 

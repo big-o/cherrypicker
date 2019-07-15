@@ -3,16 +3,16 @@ API Reference
 =============
 
 .. autoclass:: cherrypicker.CherryPicker
-    :methods:
+    :members:
 
 .. autoclass:: cherrypicker.CherryPickerTraversable
-    :methods:
+    :members:
 
 .. autoclass:: cherrypicker.CherryPickerIterable
-    :methods:
+    :members:
 
 .. autoclass:: cherrypicker.CherryPickerMapping
-    :methods:
+    :members:
 
 .. autoclass:: cherrypicker.CherryPickerLeaf
-    :methods:
+    :members:
