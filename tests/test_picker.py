@@ -50,7 +50,7 @@ def test_iterable():
     # Propagation hack
     data = [dict([(int(k), v) for k, v in d.items()])
             for d in json.load(open(abs_path('data/numbers.json')))]
-    picker = CherryPicker(data, on_error='raise')
+    picker = CherryPicker(data, on_missing='ignore')
 
     assert picker[0].get() == data[0]
     assert picker[0, True].get() == [data[0][0], None]
