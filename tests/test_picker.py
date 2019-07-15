@@ -45,6 +45,38 @@ def run_map_tests(n_jobs=None):
     assert picker['id'].get() == first['id']
     assert picker['city', 'id'].get() == [first['city'], first['id']]
 
+
+def test_flatten():
+    for n in n_jobs:
+        run_flatten_tests(n)
+
+
+def run_flatten_tests(n_jobs=None):
+    data = json.load(open(abs_path('data/climate.json')))
+    first = data[0]
+
+    flat_keys = [
+        'id',
+        'city',
+        'country'
+    ]
+
+    for month in range(12):
+        flat_keys.append('monthlyAvg_{}_high'.format(month))
+        flat_keys.append('monthlyAvg_{}_low'.format(month))
+        flat_keys.append('monthlyAvg_{}_dryDays'.format(month))
+        flat_keys.append('monthlyAvg_{}_snowDays'.format(month))
+        flat_keys.append('monthlyAvg_{}_rainfall'.format(month))
+
+    fpicker = CherryPicker(first, n_jobs=n_jobs)
+    picker = CherryPicker(data, n_jobs=n_jobs)
+    assert list(fpicker.flatten.keys()) == flat_keys
+    assert list(fpicker.flatten().keys()) == flat_keys
+
+    assert list(picker.flatten[0].keys()) == flat_keys
+    assert list(picker.flatten()[0].keys()) == flat_keys
+
+
 def test_iterable():
     with pytest.raises(ValueError):
         run_iter_tests(0)

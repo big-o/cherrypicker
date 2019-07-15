@@ -3,19 +3,141 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+.. role:: python(code)
+    :language: python
+
+============
 CherryPicker
 ============
 
-> `Flatten complex data.`
+*Flatten complex data.*
 
 :mod:`cherrypicker` provides a chainable filter and extraction interface to
-allow you to easily pick out data fields from complex structures and place them
-into flat tables which are suitable for other data analysis libraries such as
-:mod:`pandas`.
+allow you to easily pick out objects from complex structures and place them in
+a flat table. It fills a similar role to jQuery in JavaScript, enabling you to
+navigate complex structures without the need for lots of nested :meth:`map` and
+:meth:`filter` functions.
+
+Behold...
+
+.. code-block:: python
+    >>> from cherrypicker import CherryPicker
+    >>> import json
+    >>> data = json.load(open('climate.json'))
+    >>> picker = CherryPicker(data)
+    >>> picker['id', 'city'].get()
+    [[1, 'Amsterdam'], [2, 'Athens'], [3, 'Atlanta GA'], ...]
+
+This example is equivalent to the list comprehension
+:python:`[[item['id'], item['city']] for item in data]`. :mod:`cherrypicker`
+becomes most useful though when you combine it with filtering:
+
+.. code-block:: python
+    >>> picker(city='B*')['id', 'city'].get()
+    [[6, 'Bangkok'], [7, 'Barcelona'], [8, 'Beijing'], ...]
+
+The equivalent list comprehension would be:
+:python:`[[item['id'], item['city']] for item in data if item['city'].startswith('B')]`.
+As you can see, :class:`CherryPicker` does filtering and extraction with
+chained operations rather than list comprehensions. :doc:`Filtering <filter.rst>`
+is done with parentheses ``()`` and :doc:`extraction <extract.rst` is done with
+square brackets ``[]``. Chainingcan make it easier to build complex operations:
+
+.. code-block:: python
+    >>> picker(city='B*')['info'](
+    ...     population=lambda n: n > 2000000, area=lambda a: a < 2000, how='all'
+    ... )['area', 'population'].get()
+    [[1568, 8300000], [891, 3700000], [203, 2800000]]
+
+This is getting too unwieldy for list comprehensions already; to achieve the
+example above in another way we may wish to use a for loop:
+
+.. code-block:: python
+    table = []
+    for item in data:
+        if item['city'].startswith('B'):
+            info = item['info']
+            if info['population'] > 2000000 and info['area'] < 2000:
+                table.append(info['area'], info['population'])
+
+Things can get complicated pretty quickly! There are many different types of
+filtering predicate you can use with :mod:`cherrypicker`, including exact
+matches, wildcards, regex and custom functions. Read all about them in the
+:doc:`filter` documentation.
+
+Of course, it would be nice if we could extract data from both the base level
+and the info sub-level of each item and put them into a flat table, ready to
+load into your favourite data analysis package. We can do this in
+:mod:`cherrypicker` with :prop:`CherryPickerMapping.flatten`. Let's say that
+each item in our data list has a city name and a list of average low/high
+temperatures for each month of the year:
+
+.. code-block:: json
+[
+    {
+        "id": 1,
+        "city": "Amsterdam",
+        "country": "Netherlands",
+        "monthlyAvg": [
+            {
+                "high": 7,
+                "low": 3,
+                "dryDays": 19,
+                "snowDays": 4,
+                "rainfall": 68
+            },
+            {
+                "high": 6,
+                "low": 3,
+                "dryDays": 13,
+                "snowDays": 2,
+                "rainfall": 47
+            },
+            ...
+        ]
+    }
+]
+
+By flattening the data before filtering/extracting, we can get the name and
+monthly temperatures alongside each other:
+
+.. code-block:: python
+    >>> picker.flatten(monthlyAvg_0_high=lambda t: t > 30)['city', 'monthlyAvg_0_high'].get()
+    [['Bangkok', 33], ['Brasilia', 31], ['Ho Chi Minh City', 33], ...]
+    >>> picker.flatten(monthlyAvg_0_high=lambda t: t < 0)['city', 'monthlyAvg_0_high'].get()
+    [['Calgary', -1], ['Montreal', -4], ['Moscow', -4], ...]
+
+Parallel Processing
+-------------------
+
+As well as making complex queries easier, :class:`CherryPicker` also allows you
+to easily use parallel processing to crunch through large datasets quickly:
+
+.. code-block:: python
+    >>> picker = CherryPicker(data, n_jobs=4)
+    >>> picker(city='B*')['id', 'city'].get()
+
+Everything is the same as before, except you supply an `n_jobs` parameter to
+specify the number of CPUs you wish to use (a value of `-1` will mean all CPUs
+are used).
+
+Note that for small datasets, you will probably get better performance without
+parallel processing, as the benefits of using multiple CPUs will be outweighed
+by the overhead of setting up multiple processes. For large datasets with long
+lists though, parallel processing can significantly speed up your operations.
+
+* :doc:`filter`
+* :doc:`extract`
+* :doc:`api`
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :hidden:
+   :caption: Contents
+
+   filter.rst
+   extract.rst
+   api.rst
 
 
 

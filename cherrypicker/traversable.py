@@ -3,7 +3,7 @@ from __future__ import division
 from .picker import CherryPicker
 from .util import OrderedSet
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from fnmatch import fnmatchcase
 from functools import partial
 from itertools import chain
@@ -222,6 +222,17 @@ class CherryPickerMapping(CherryPickerTraversable):
         picker = super(CherryPicker, cls).__new__(cls)
         return picker
 
+    def __contains__(self, key):
+        try:
+            if isinstance(key, tuple):
+                for k in key:
+                    self._obj[k]
+            else:
+                self._obj[key]
+            return True
+        except KeyError:
+            return False
+
     def keys(self, peek=None):
         """
         :param peek: Not used.
@@ -251,6 +262,49 @@ class CherryPickerMapping(CherryPickerTraversable):
         :rtype: list
         """
         return self._obj.items()
+
+    @classmethod
+    def _flatten(cls, obj, flat=None, prefix='', delim='_', maxdepth=100, depth=0):
+        """
+            Flatten json object with nested keys into a single level.
+            Args:
+                nested_json: A nested json object.
+            Returns:
+                The flattened json object if successful, None otherwise.
+        """
+        if flat is None:
+            flat = {}
+
+        if maxdepth is not None and depth > maxdepth:
+            flat[prefix[:-1]] = obj
+            return flat
+
+
+        ccls = cls._get_cherry_class(obj)
+        if ccls is CherryPickerMapping:
+            for key in obj:
+                cls._flatten(obj[key], flat,
+                             prefix='{}{}{}'.format(prefix, key, delim),
+                             maxdepth=maxdepth, depth=depth+1)
+
+        elif ccls is CherryPickerIterable:
+            for idx, val in enumerate(obj):
+                cls._flatten(val, flat,
+                             prefix='{}{}{}'.format(prefix, idx, delim),
+                             maxdepth=maxdepth, depth=depth+1)
+
+        else:
+            flat[prefix[:-1]] = obj
+
+        return flat
+
+    @property
+    def flatten(self, delim='_', maxdepth=100):
+        """
+        Flatten down the object so that all of its values are leaf nodes.
+        """
+        flat = self._flatten(self._obj, delim=delim, maxdepth=maxdepth)
+        return self._make_child(flat, self._parent)
 
     def __getitem__(self, args):
         allow_missing = self._opts['on_missing'] == 'ignore'
@@ -309,11 +363,43 @@ class CherryPickerIterable(CherryPickerTraversable):
         picker = super(CherryPicker, cls).__new__(cls)
         return picker
 
+    def __contains__(self, item):
+        return item in self._obj
+
     @classmethod
     def _make_child(cls, obj, parent, child_parents=None):
         child = super(CherryPickerIterable, cls)._make_child(obj, parent)
         child._child_parents = child_parents
         return child
+
+    @classmethod
+    def _flatten(cls, chunk, delim='_', maxdepth=100):
+        flats = []
+        for item in chunk:
+            ccls = cls._get_cherry_class(item)
+            if ccls is CherryPickerMapping:
+                flats.append(CherryPickerMapping._flatten(
+                    item, delim='_', maxdepth=100)
+                )
+            else:
+                flats.append(item)
+
+        return flats
+
+    @property
+    def flatten(self, delim='_', maxdepth=100):
+        with Parallel(self._effective_n_jobs) as parallel:
+            flats = parallel(
+                delayed(CherryPickerIterable._flatten)(
+                    chunk, delim=delim, maxdepth=maxdepth
+                ) for chunk in self._chunks()
+            )
+            if self._effective_n_jobs == 1:
+                flats = flats[0]
+            else:
+                flats = self._join_chunks(flats)
+
+            return self._make_child(flats, self._parent)
 
     def keys(self, peek=5):
         """
@@ -422,7 +508,7 @@ class CherryPickerIterable(CherryPickerTraversable):
                     if self._effective_n_jobs == 1:
                         children = children[0]
                     else:
-                        children = self._flatten(children)
+                        children = self._join_chunks(children)
 
                 return self._make_child(children, self, self._child_parents)
 
@@ -436,8 +522,8 @@ class CherryPickerIterable(CherryPickerTraversable):
                 if self._effective_n_jobs == 1:
                     tree = tree[0]
                 else:
-                    tree = [self._flatten([t[0] for t in tree]),
-                            self._flatten([t[1] for t in tree])]
+                    tree = [self._join_chunks([t[0] for t in tree]),
+                            self._join_chunks([t[1] for t in tree])]
 
             grandchildren = []
             all_parents = []
@@ -466,7 +552,7 @@ class CherryPickerIterable(CherryPickerTraversable):
             chunk = self._obj[pos:pos+chunksize]
             yield chunk
 
-    def _flatten(self, chunks):
+    def _join_chunks(self, chunks):
         return list(chain.from_iterable(chunks))
 
     def __repr__(self):
@@ -496,7 +582,7 @@ class CherryPickerIterable(CherryPickerTraversable):
         if self._effective_n_jobs == 1:
             items = items[0]
         else:
-            items = self._flatten(items)
+            items = self._join_chunks(items)
 
         return items
 

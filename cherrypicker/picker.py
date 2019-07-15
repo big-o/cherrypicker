@@ -119,6 +119,9 @@ class CherryPicker(object):
         picker = super(CherryPicker, cls).__new__(ccls)
         return picker
 
+    def __eq__(self, other):
+        return self._obj == other._obj
+
     def __init__(self, obj, on_missing=_opts['on_missing'],
                  on_error=_opts['on_error'], on_leaf=_opts['on_leaf'],
                  leaf_types=_opts['leaf_types'], default=_opts['default'],
