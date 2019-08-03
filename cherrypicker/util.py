@@ -1,4 +1,4 @@
-import collections
+import collections.abc
 
 
 __all__ = (
@@ -6,7 +6,7 @@ __all__ = (
 )
 
 
-class OrderedSet(collections.MutableSet):
+class OrderedSet(collections.abc.MutableSet):
     """
     Set that remembers original insertion order.
 
