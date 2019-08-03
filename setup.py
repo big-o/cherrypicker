@@ -63,7 +63,8 @@ setup(
         'test': [
             'coverage',
             'pytest',
-            'pytest-cov'
+            'pytest-cov',
+            'pytest-xdist'
         ],
     }
 )
