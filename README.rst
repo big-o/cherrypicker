@@ -3,7 +3,7 @@ Cherrypicker
 
 *Flatten complex data.*
 
-:mod:`cherrypicker` aims to make common ETL tasks (filtering data and
+``cherrypicker`` aims to make common ETL tasks (filtering data and
 restructuring it into flat tables) easier, by taking inspiration from jQuery
 and applying it in a Pythonic way to generic data objects.
 
@@ -11,7 +11,7 @@ and applying it in a Pythonic way to generic data objects.
 
     pip install cherrypicker
 
-:mod:`cherrypicker` provides a chainable filter and extraction interface to
+``cherrypicker`` provides a chainable filter and extraction interface to
 allow you to easily pick out objects from complex structures and place them in
 a flat table. It fills a similar role to jQuery in JavaScript, enabling you to
 navigate complex structures without the need for lots of complex nested for
