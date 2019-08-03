@@ -47,12 +47,12 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6'
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7'
     ],
     keywords='cherrypicker data etl extract flatten jquery',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=requirements,
     extras_require={
         'dev': [
@@ -64,7 +64,8 @@ setup(
             'coverage',
             'pytest',
             'pytest-cov',
-            'pytest-xdist'
+            'pytest-xdist',
+            'tox'
         ],
     }
 )

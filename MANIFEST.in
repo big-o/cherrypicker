@@ -1,12 +1,15 @@
-include *.txt
 include LICENSE
+include README.rst
+include requirements.txt
+
+# added by check_manifest.py
+include pytest.ini
+include tox.ini
 recursive-include docs *.bat
+recursive-include docs *.html
 recursive-include docs *.js
 recursive-include docs *.py
 recursive-include docs *.rst
 recursive-include docs Makefile
 recursive-include tests *.json
 recursive-include tests *.py
-
-# added by check_manifest.py
-recursive-include docs *.html
