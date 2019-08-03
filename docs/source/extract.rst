@@ -33,6 +33,16 @@ you can get down to the raw data with the :meth:`CherryPicker.get()` operator:
     >>> picker[0]['id', 'city'].get()
     [1, 'Amsterdam']
 
+Note that you can also extract data as an attribute for convenience:
+
+.. code-block:: python
+
+    >>> picker = CherryPicker(data)
+    >>> picker.id.get()
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]
+    >>> picker[0].id.get()
+    1
+
 Navigating lists
 ----------------
 

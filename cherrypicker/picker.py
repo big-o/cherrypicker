@@ -147,6 +147,13 @@ class CherryPicker(object):
         self._parent = None
         self._obj = obj
 
+    def __getattr__(self, attr):
+        try:
+            return self.__getitem__(attr)
+        except KeyError:
+            raise AttributeError("'{}' object has no attribute '{}'".format(
+                    self.__class__.__name__, attr)) from None
+
     def _parse_leaf_types(self, leaf_types):
         if leaf_types is None:
             _leaf_types = tuple()

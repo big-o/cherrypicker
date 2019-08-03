@@ -93,6 +93,11 @@ def run_iter_tests(n_jobs=None):
     assert sorted(picker.keys()) == ['city', 'country', 'id', 'monthlyAvg']
 
     assert picker(country='Russia')['id'].get() == [53, 74]
+    assert picker(country='Russia').id.get() == [53, 74]
+    with pytest.raises(AttributeError):
+        picker(country='Russia').notanattr
+        picker(country='Russia')[0].notanattr
+        picker(country='Russia')[0]['id'].notanattr
     assert picker(country='Russia')[0]['id'].get() == 53
     assert picker(country='Russia', id=53)[0]['id'].get() == 53
     assert picker(country='Russia', id=53, how='any')[0]['id'].get() == 53

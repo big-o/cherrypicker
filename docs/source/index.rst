@@ -32,7 +32,8 @@ Behold...
 
     >>> from cherrypicker import CherryPicker
     >>> import json
-    >>> data = json.load(open('climate.json'))
+    >>> with open('climate.json', 'r') as fp:
+    ...     data = json.load(fp)
     >>> picker = CherryPicker(data)
     >>> picker['id', 'city'].get()
     [[1, 'Amsterdam'], [2, 'Athens'], [3, 'Atlanta GA'], ...]
@@ -57,12 +58,26 @@ operations:
 .. code-block:: python
 
     >>> picker(city='B*')['info'](
-    ...     population=lambda n: n > 2000000, area=lambda a: a < 2000, how='all'
+    ...     population=lambda n: n > 2000000,
+    ...     area=lambda a: a < 2000
     ... )['area', 'population'].get()
     [[1568, 8300000], [891, 3700000], [203, 2800000]]
 
-This is getting too unwieldy for list comprehensions already; to achieve the
-example above in another way we may wish to use a for loop:
+Note that the above example searches for a population > 2000000 *and* an area
+of < 2000. If you wanted to search for population > 2000000 *or* an area of
+< 2000, simply add an extra ``how='any'`` parameter along with your predicates:
+
+.. code-block:: python
+
+    >>> picker(city='B*')['info'](
+    ...     population=lambda n: n > 2000000,
+    ...     area=lambda a: a < 2000
+    ...     how='any'
+    ... )['area', 'population'].get()
+    [[1568, 8300000], [102, 1615000], [16808, 21540000], ...]
+
+This job is already getting too unwieldy for list comprehensions; to achieve
+the example above in another way we may wish to use a for loop:
 
 .. code-block:: python
 
@@ -70,7 +85,7 @@ example above in another way we may wish to use a for loop:
     for item in data:
         if item['city'].startswith('B'):
             info = item['info']
-            if info['population'] > 2000000 and info['area'] < 2000:
+            if info['population'] > 2000000 or info['area'] < 2000:
                 table.append(info['area'], info['population'])
 
 Without :mod:`cherrypicker`, the amount of code we need to write increases
@@ -117,12 +132,16 @@ monthly temperatures alongside each other:
 
 .. code-block:: python
 
-    >>> picker.flatten(monthlyAvg_0_high=lambda tmp: tmp > 30)['city', 'monthlyAvg_0_high'].get()
+    >>> picker.flatten(
+    ...     monthlyAvg_0_high=lambda tmp: tmp > 30
+    ... )['city', 'monthlyAvg_0_high'].get()
     [['Bangkok', 33], ['Brasilia', 31], ['Ho Chi Minh City', 33], ...]
 
 .. code-block:: python
 
-    >>> picker.flatten(monthlyAvg_0_high=lambda tmp: tmp < 0)['city', 'monthlyAvg_0_high'].get()
+    >>> picker.flatten(
+    ...     monthlyAvg_0_high=lambda tmp: tmp < 0
+    ... )['city', 'monthlyAvg_0_high'].get()
     [['Calgary', -1], ['Montreal', -4], ['Moscow', -4], ...]
 
 One final point to note is that :mod:`cherrypicker` understands data by looking

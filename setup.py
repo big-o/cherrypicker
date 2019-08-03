@@ -30,7 +30,9 @@ with open('README.rst', encoding='utf-8') as f:
 
 # Copy dependencies from requirements file
 with open('requirements.txt', encoding='utf-8') as f:
-    requirements = f.read().split('\n')
+    requirements = [line.strip() for line in f.read().splitlines()]
+    requirements = [line.split('#')[0].strip() for line in requirements
+                    if not line.startswith('#')]
 
 
 setup(
