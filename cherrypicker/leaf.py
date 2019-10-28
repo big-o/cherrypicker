@@ -4,9 +4,7 @@ from .exceptions import LeafError
 from .picker import CherryPicker
 
 
-__all__ = (
-    'CherryPickerLeaf',
-)
+__all__ = ("CherryPickerLeaf",)
 
 
 class CherryPickerLeaf(CherryPicker):
@@ -26,7 +24,7 @@ class CherryPickerLeaf(CherryPicker):
         return True
 
     def __getitem__(self, item):
-        if self._opts['on_leaf'] == 'raise':
+        if self._opts["on_leaf"] == "raise":
             raise LeafError()
         return self._obj.__getitem__(item)
 
@@ -34,10 +32,9 @@ class CherryPickerLeaf(CherryPicker):
         if self._repr is not None:
             return self._repr
 
-        self._repr = '<{}({})>'.format(self.__class__.__name__,
-                                       repr(self._obj))
+        self._repr = "<{}({})>".format(self.__class__.__name__, repr(self._obj))
 
         return self._repr
 
 
-CherryPicker.register_cherry_type('leaf', CherryPickerLeaf)
+CherryPicker.register_cherry_type("leaf", CherryPickerLeaf)

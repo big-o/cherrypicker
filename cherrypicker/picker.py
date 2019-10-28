@@ -4,9 +4,7 @@ from collections.abc import Iterable, Mapping
 from joblib import effective_n_jobs
 
 
-__all__ = (
-    'CherryPicker',
-)
+__all__ = ("CherryPicker",)
 
 
 class CherryPicker(object):
@@ -99,20 +97,19 @@ class CherryPicker(object):
     See :meth:`CherryPicker.filter` for more filtering options.
     """
 
-    _PRED_RULES = 'all', 'any'
+    _PRED_RULES = "all", "any"
 
     _leaf_types = (str, bytes)
     _leaf_funcs = tuple()
     _opts = {
-        'on_missing': 'ignore',
-        'on_error': 'ignore',
-        'on_leaf': 'raise',
-        'leaf_types': _leaf_types + _leaf_funcs,
-        'default': None,
-        'n_jobs': None
+        "on_missing": "ignore",
+        "on_error": "ignore",
+        "on_leaf": "raise",
+        "leaf_types": _leaf_types + _leaf_funcs,
+        "default": None,
+        "n_jobs": None,
     }
-    _cherry_types = {
-    }
+    _cherry_types = {}
 
     def __new__(cls, obj, **kwargs):
         ccls = cls._get_cherry_class(obj)
@@ -122,19 +119,25 @@ class CherryPicker(object):
     def __eq__(self, other):
         return self._obj == other._obj
 
-    def __init__(self, obj, on_missing=_opts['on_missing'],
-                 on_error=_opts['on_error'], on_leaf=_opts['on_leaf'],
-                 leaf_types=_opts['leaf_types'], default=_opts['default'],
-                 n_jobs=_opts['n_jobs']):
+    def __init__(
+        self,
+        obj,
+        on_missing=_opts["on_missing"],
+        on_error=_opts["on_error"],
+        on_leaf=_opts["on_leaf"],
+        leaf_types=_opts["leaf_types"],
+        default=_opts["default"],
+        n_jobs=_opts["n_jobs"],
+    ):
 
         # Anything that gets shared with children goes in here.
         self._opts = {
-            'on_missing': on_missing,
-            'on_error': on_error,
-            'on_leaf': on_leaf,
-            'default': default,
-            'leaf_types': leaf_types,
-            'n_jobs': n_jobs
+            "on_missing": on_missing,
+            "on_error": on_error,
+            "on_leaf": on_leaf,
+            "default": default,
+            "leaf_types": leaf_types,
+            "n_jobs": n_jobs,
         }
 
         # Properties that are unique to this instance.
@@ -151,8 +154,11 @@ class CherryPicker(object):
         try:
             return self.__getitem__(attr)
         except KeyError:
-            raise AttributeError("'{}' object has no attribute '{}'".format(
-                    self.__class__.__name__, attr)) from None
+            raise AttributeError(
+                "'{}' object has no attribute '{}'".format(
+                    self.__class__.__name__, attr
+                )
+            ) from None
 
     def _parse_leaf_types(self, leaf_types):
         if leaf_types is None:
@@ -160,28 +166,29 @@ class CherryPicker(object):
             _leaf_funcs = tuple()
         else:
             try:
-                _leaf_types = tuple(leaf for leaf in leaf_types
-                                    if isinstance(leaf, type))
+                _leaf_types = tuple(
+                    leaf for leaf in leaf_types if isinstance(leaf, type)
+                )
 
-                _leaf_funcs = tuple(leaf for leaf in leaf_types
-                                    if leaf not in _leaf_types)
+                _leaf_funcs = tuple(
+                    leaf for leaf in leaf_types if leaf not in _leaf_types
+                )
 
-                if any([not hasattr(func, '__call__')
-                        for func in _leaf_funcs]):
+                if any([not hasattr(func, "__call__") for func in _leaf_funcs]):
                     raise ValueError(
-                        'leaf_types must only contain types and Callables.'
+                        "leaf_types must only contain types and Callables."
                     )
 
             except TypeError:
                 if isinstance(leaf_types, type):
                     _leaf_types = (leaf_types,)
                     _leaf_funcs = tuple()
-                elif hasattr(leaf_types, '__call__'):
+                elif hasattr(leaf_types, "__call__"):
                     _leaf_types = tuple()
                     _leaf_funcs = (leaf_types,)
                 else:
                     raise ValueError(
-                        'leaf_types must only contain types and Callables.'
+                        "leaf_types must only contain types and Callables."
                     )
 
         return _leaf_types, _leaf_funcs
@@ -197,12 +204,12 @@ class CherryPicker(object):
             leaf_funcs = parent._leaf_funcs
 
         if isinstance(obj, leaf_types):
-            ccls = cls._cherry_types['leaf']
+            ccls = cls._cherry_types["leaf"]
         elif len(leaf_funcs) > 0:
             for func in leaf_funcs:
                 try:
                     if func(obj):
-                        ccls = cls._cherry_types['leaf']
+                        ccls = cls._cherry_types["leaf"]
                         break
                 except:
                     # TODO: Should we warn, or have a user-defined action?
@@ -210,11 +217,11 @@ class CherryPicker(object):
 
         if ccls is None:
             if isinstance(obj, Mapping):
-                ccls = cls._cherry_types['mapping']
+                ccls = cls._cherry_types["mapping"]
             elif isinstance(obj, Iterable):
-                ccls = cls._cherry_types['iterable']
+                ccls = cls._cherry_types["iterable"]
             else:
-                ccls = cls._cherry_types['leaf']
+                ccls = cls._cherry_types["leaf"]
 
         return ccls
 
@@ -240,7 +247,7 @@ class CherryPicker(object):
         """
         if self._parent is not None:
             return self._parent
-        raise AttributeError('Root node has no parent.')
+        raise AttributeError("Root node has no parent.")
 
     def get(self):
         """
