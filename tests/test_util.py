@@ -45,8 +45,8 @@ def test_orderedset():
     os4 = OrderedSet(os2)
     assert os2 == os4
 
-    d1 = {0:1}
-    d2 = {0:1}
+    d1 = {0: 1}
+    d2 = {0: 1}
 
     os5 = OrderedSet(key=id)
     os5.add(d1)
