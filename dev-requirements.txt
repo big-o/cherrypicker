@@ -1,5 +1,5 @@
 coverage
-pytest
+pytest>=4.4.0
 pytest-cov
 pytest-xdist
 tox
