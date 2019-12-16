@@ -58,7 +58,7 @@ setup(
     python_requires='>=3.6',
     install_requires=parse_requirements('requirements.txt'),
     extras_require={
-        'dev': parse_requirements('requirements-dev.txt')
+        'dev': parse_requirements('requirements-dev.txt'),
         'test': parse_requirements('requirements-test.txt')
     }
 )
