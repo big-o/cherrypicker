@@ -1,0 +1,5 @@
+black
+click
+coverage
+pytest
+pytest-cov
