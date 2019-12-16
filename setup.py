@@ -28,11 +28,14 @@ with open('README.rst', encoding='utf-8') as f:
     long_description = f.read()
 
 
-# Copy dependencies from requirements file
-with open('requirements.txt', encoding='utf-8') as f:
-    requirements = [line.strip() for line in f.read().splitlines()]
-    requirements = [line.split('#')[0].strip() for line in requirements
-                    if not line.startswith('#')]
+def parse_requirements(filename):
+    # Copy dependencies from requirements file
+    with open(filename, encoding='utf-8') as f:
+        requirements = [line.strip() for line in f.read().splitlines()]
+        requirements = [line.split('#')[0].strip() for line in requirements
+                        if not line.startswith('#')]
+
+    return requirements
 
 
 setup(
@@ -53,19 +56,9 @@ setup(
     keywords='cherrypicker data etl extract flatten jquery',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     python_requires='>=3.6',
-    install_requires=requirements,
+    install_requires=parse_requirements('requirements.txt'),
     extras_require={
-        'dev': [
-            'check-manifest',
-            'sphinx',
-            'sphinx_rtd_theme'
-        ],
-        'test': [
-            'coverage',
-            'pytest',
-            'pytest-cov',
-            'pytest-xdist',
-            'tox'
-        ],
+        'dev': parse_requirements('requirements-dev.txt')
+        'test': parse_requirements('requirements-test.txt')
     }
 )
