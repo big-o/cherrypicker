@@ -1,4 +1,5 @@
 import collections.abc
+from typing import Any, Generator
 
 
 __all__ = ("OrderedSet",)
@@ -16,7 +17,7 @@ class OrderedSet(collections.abc.MutableSet):
     Adapted from: https://code.activestate.com/recipes/576694/
     """
 
-    def __init__(self, iterable=None, key=None):
+    def __init__(self, iterable=None, key=None) -> None:
         self._end = end = []
         end += [None, end, end]  # sentinel node for doubly linked list
         self._map = {}  # key --> [key, prev, next]
@@ -24,47 +25,47 @@ class OrderedSet(collections.abc.MutableSet):
         if iterable is not None:
             self |= iterable
 
-    def _get_key(self, item):
+    def _get_key(self, item) -> Any:
         if self._key is not None:
             return self._key(item)
         else:
             return item
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._map)
 
-    def __contains__(self, item):
+    def __contains__(self, item) -> bool:
         return self._get_key(item) in self._map
 
-    def add(self, item):
+    def add(self, item) -> None:
         key = self._get_key(item)
         if key not in self._map:
             end = self._end
             curr = end[1]
             curr[2] = end[1] = self._map[key] = [item, curr, end]
 
-    def discard(self, item):
+    def discard(self, item) -> None:
         key = self._get_key(item)
         if key in self._map:
             item, prev, next = self._map.pop(key)
             prev[2] = next
             next[1] = prev
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Any, Any, None]:
         end = self._end
         curr = end[2]
         while curr is not end:
             yield curr[0]
             curr = curr[2]
 
-    def __reversed__(self):
+    def __reversed__(self) -> Generator[Any, Any, None]:
         end = self._end
         curr = end[1]
         while curr is not end:
             yield curr[0]
             curr = curr[1]
 
-    def pop(self, last=True):
+    def pop(self, last=True) -> Any:
         if not self:
             raise KeyError("set is empty")
         item = self._end[1][0] if last else self._end[2][0]

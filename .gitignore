@@ -76,6 +76,13 @@ target/
 # pyenv
 .python-version
 
+# Pyre
+.pyre/
+.pyre_configuration
+
+# Pytype
+.pytype
+
 # celery beat schedule file
 celerybeat-schedule
 
