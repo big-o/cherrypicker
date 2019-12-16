@@ -8,6 +8,7 @@ from functools import partial
 from itertools import chain
 from joblib import Parallel, delayed
 import re
+from typing import Any, Dict, Generator, NoReturn, Optional, Tuple, Union
 
 
 __all__ = ("CherryPickerIterable", "CherryPickerMapping", "CherryPickerTraversable")
@@ -20,7 +21,7 @@ class CherryPickerTraversable(CherryPicker):
 
     _RE_ERR = type(re.error(""))
 
-    def __call__(self, *args, opts=None, **kwargs):
+    def __call__(self, *args, opts=None, **kwargs) -> Any:
         """
         Shortcut to :meth:`.filter`.
         """
@@ -28,14 +29,14 @@ class CherryPickerTraversable(CherryPicker):
             opts = self._opts
         return self.filter(*args, opts=opts, **kwargs)
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         return self._obj.__iter__()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._obj)
 
     @classmethod
-    def _make_child(cls, obj, parent):
+    def _make_child(cls, obj, parent) -> Any:
         ccls = cls._get_cherry_class(obj, parent)
         if parent is not None:
             child = ccls(obj, **parent._opts)
@@ -45,14 +46,14 @@ class CherryPickerTraversable(CherryPicker):
         return child
 
     def filter(
-        self,
+        self: "CherryPickerTraversable",
         how="all",
         allow_wildcards=True,
         case_sensitive=True,
         regex=False,
         opts=None,
         **predicates
-    ):
+    ) -> "CherryPickerTraversable":
         """
         Return a filtered view of the child nodes. This method is usually
         accessed via :meth:`CherryPicker.__call__`
@@ -154,14 +155,14 @@ class CherryPickerTraversable(CherryPicker):
 
     def _filter(
         self, how, allow_wildcards, case_sensitive, regex, opts=None, **predicates
-    ):
+    ) -> NoReturn:
         raise NotImplementedError()
 
     # Needs to be a class method so we can parallelise it.
     @classmethod
     def _filter_item(
         cls, obj, how, allow_wildcards, case_sensitive, regex, opts=None, **predicates
-    ):
+    ) -> Optional[bool]:
         if opts is None:
             opts = cls._opts
 
@@ -213,7 +214,7 @@ class CherryPickerTraversable(CherryPicker):
         elif how == "all":
             return True
 
-    def keys(self):
+    def keys(self) -> NoReturn:
         raise NotImplementedError()
 
 
@@ -222,11 +223,11 @@ class CherryPickerMapping(CherryPickerTraversable):
     A mappable (key->value pairs) object to be cherry picked from.
     """
 
-    def __new__(cls, obj, **kwargs):
+    def __new__(cls: "CherryPickerMapping", obj, **kwargs) -> "CherryPickerMapping":
         picker = super(CherryPicker, cls).__new__(cls)
         return picker
 
-    def __contains__(self, key):
+    def __contains__(self, key) -> bool:
         try:
             if isinstance(key, tuple):
                 for k in key:
@@ -237,7 +238,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         except KeyError:
             return False
 
-    def keys(self, peek=None):
+    def keys(self, peek=None) -> Any:
         """
         :param peek: Not used.
         :type peek: object, optional
@@ -247,7 +248,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         """
         return self._obj.keys()
 
-    def values(self, peek=None):
+    def values(self, peek=None) -> Any:
         """
         :param peek: Not used.
         :type peek: object, optional
@@ -257,7 +258,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         """
         return self._obj.values()
 
-    def items(self, peek=None):
+    def items(self, peek=None) -> Any:
         """
         :param peek: Not used.
         :type peek: object, optional
@@ -268,7 +269,15 @@ class CherryPickerMapping(CherryPickerTraversable):
         return self._obj.items()
 
     @classmethod
-    def _flatten(cls, obj, flat=None, prefix="", delim="_", maxdepth=100, depth=0):
+    def _flatten(
+        cls,
+        obj: Any,
+        flat: Optional[dict] = None,
+        prefix="",
+        delim="_",
+        maxdepth=100,
+        depth=0,
+    ) -> Union[Dict[Any, Any], Dict]:
         """
             Flatten json object with nested keys into a single level.
             Args:
@@ -317,7 +326,7 @@ class CherryPickerMapping(CherryPickerTraversable):
         flat = self._flatten(self._obj, delim=delim, maxdepth=maxdepth)
         return self._make_child(flat, self._parent)
 
-    def __getitem__(self, args):
+    def __getitem__(self, args) -> Any:
         allow_missing = self._opts["on_missing"] == "ignore"
         default = self._opts["default"]
         obj = self._obj
@@ -338,7 +347,7 @@ class CherryPickerMapping(CherryPickerTraversable):
 
         return self._make_child(items, self)
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         if self._repr is not None:
             return self._repr
 
@@ -350,7 +359,7 @@ class CherryPickerMapping(CherryPickerTraversable):
 
     def _filter(
         self, how, allow_wildcards, case_sensitive, regex, opts=None, **predicates
-    ):
+    ) -> Any:
         if opts is None:
             opts = self._opts
 
@@ -377,21 +386,21 @@ class CherryPickerIterable(CherryPickerTraversable):
     # grandchildren.
     _child_parents = None
 
-    def __new__(cls, obj, **kwargs):
+    def __new__(cls: "CherryPickerIterable", obj, **kwargs) -> "CherryPickerIterable":
         picker = super(CherryPicker, cls).__new__(cls)
         return picker
 
-    def __contains__(self, item):
+    def __contains__(self, item) -> bool:
         return item in self._obj
 
     @classmethod
-    def _make_child(cls, obj, parent, child_parents=None):
+    def _make_child(cls, obj, parent, child_parents=None) -> Any:
         child = super(CherryPickerIterable, cls)._make_child(obj, parent)
         child._child_parents = child_parents
         return child
 
     @classmethod
-    def _flatten(cls, chunk, delim="_", maxdepth=100):
+    def _flatten(cls, chunk, delim="_", maxdepth=100) -> list:
         flats = []
         for item in chunk:
             ccls = cls._get_cherry_class(item)
@@ -420,7 +429,7 @@ class CherryPickerIterable(CherryPickerTraversable):
 
             return self._make_child(flats, self._parent)
 
-    def keys(self, peek=5):
+    def keys(self, peek=5) -> list:
         """
         :param peek: The maximum number of items in the iterable to inspect in
                 order to ascertain what all possible keys are. If None, all
@@ -451,7 +460,7 @@ class CherryPickerIterable(CherryPickerTraversable):
     @classmethod
     def _filter_chunk(
         cls, chunk, how, allow_wildcards, case_sensitive, regex, opts=None, **predicates
-    ):
+    ) -> list:
         if opts is None:
             opts = cls._opts
 
@@ -472,7 +481,7 @@ class CherryPickerIterable(CherryPickerTraversable):
         return items
 
     @classmethod
-    def _get_child_items(cls, keys, batch):
+    def _get_child_items(cls, keys, batch) -> list:
         if isinstance(keys, tuple):
             items = [[obj.__getitem__(key) for key in keys] for obj in batch]
         else:
@@ -480,7 +489,7 @@ class CherryPickerIterable(CherryPickerTraversable):
         return items
 
     @classmethod
-    def _get_grandchild_items(cls, keys, batch):
+    def _get_grandchild_items(cls, keys, batch) -> Tuple[list, list]:
         # Always create lists for better pandas/numpy integration
         items = []
         parents = []
@@ -491,7 +500,7 @@ class CherryPickerIterable(CherryPickerTraversable):
 
         return items, parents
 
-    def __getitem__(self, args):
+    def __getitem__(self, args) -> Any:
         if len(self._obj) == 0:
             if self._opts["on_missing"] == "ignore":
                 return self._make_child([], self)
@@ -567,7 +576,7 @@ class CherryPickerIterable(CherryPickerTraversable):
                 self._obj.__getitem__(args), self, self._child_parents
             )
 
-    def _chunks(self):
+    def _chunks(self) -> Generator:
         if len(self._obj) == 0:
             return self._obj
 
@@ -581,10 +590,10 @@ class CherryPickerIterable(CherryPickerTraversable):
             chunk = self._obj[pos : pos + chunksize]
             yield chunk
 
-    def _join_chunks(self, chunks):
+    def _join_chunks(self, chunks) -> list:
         return list(chain.from_iterable(chunks))
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         if self._repr is not None:
             return self._repr
 
@@ -601,7 +610,7 @@ class CherryPickerIterable(CherryPickerTraversable):
 
     def _filter(
         self, how, allow_wildcards, case_sensitive, regex, opts=None, **predicates
-    ):
+    ) -> Any:
         if opts is None:
             opts = self._opts
 

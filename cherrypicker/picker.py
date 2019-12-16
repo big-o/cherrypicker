@@ -2,6 +2,7 @@ from __future__ import division
 
 from collections.abc import Iterable, Mapping
 from joblib import effective_n_jobs
+from typing import Any, Callable, List, NoReturn, Optional, Tuple, Union
 
 
 __all__ = ("CherryPicker",)
@@ -111,12 +112,12 @@ class CherryPicker(object):
     }
     _cherry_types = {}
 
-    def __new__(cls, obj, **kwargs):
+    def __new__(cls, obj, **kwargs) -> Any:
         ccls = cls._get_cherry_class(obj)
         picker = super(CherryPicker, cls).__new__(ccls)
         return picker
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> Any:
         return self._obj == other._obj
 
     def __init__(
@@ -128,7 +129,7 @@ class CherryPicker(object):
         leaf_types=_opts["leaf_types"],
         default=_opts["default"],
         n_jobs=_opts["n_jobs"],
-    ):
+    ) -> None:
 
         # Anything that gets shared with children goes in here.
         self._opts = {
@@ -150,7 +151,7 @@ class CherryPicker(object):
         self._parent = None
         self._obj = obj
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr) -> Any:
         try:
             return self.__getitem__(attr)
         except KeyError:
@@ -160,7 +161,9 @@ class CherryPicker(object):
                 )
             ) from None
 
-    def _parse_leaf_types(self, leaf_types):
+    def _parse_leaf_types(
+        self, leaf_types: Optional[List[Union[type, Callable]]]
+    ) -> Tuple[tuple, tuple]:
         if leaf_types is None:
             _leaf_types = tuple()
             _leaf_funcs = tuple()
@@ -194,7 +197,7 @@ class CherryPicker(object):
         return _leaf_types, _leaf_funcs
 
     @classmethod
-    def _get_cherry_class(cls, obj, parent=None):
+    def _get_cherry_class(cls, obj, parent=None) -> Any:
         ccls = None
         if parent is None:
             leaf_types = cls._leaf_types
@@ -204,12 +207,12 @@ class CherryPicker(object):
             leaf_funcs = parent._leaf_funcs
 
         if isinstance(obj, leaf_types):
-            ccls = cls._cherry_types["leaf"]
+            ccls = cls._cherry_types["leaf"]  # pytype: disable=key-error
         elif len(leaf_funcs) > 0:
             for func in leaf_funcs:
                 try:
                     if func(obj):
-                        ccls = cls._cherry_types["leaf"]
+                        ccls = cls._cherry_types["leaf"]  # pytype: disable=key-error
                         break
                 except:
                     # TODO: Should we warn, or have a user-defined action?
@@ -217,16 +220,16 @@ class CherryPicker(object):
 
         if ccls is None:
             if isinstance(obj, Mapping):
-                ccls = cls._cherry_types["mapping"]
+                ccls = cls._cherry_types["mapping"]  # pytype: disable=key-error
             elif isinstance(obj, Iterable):
-                ccls = cls._cherry_types["iterable"]
+                ccls = cls._cherry_types["iterable"]  # pytype: disable=key-error
             else:
-                ccls = cls._cherry_types["leaf"]
+                ccls = cls._cherry_types["leaf"]  # pytype: disable=key-error
 
         return ccls
 
     @classmethod
-    def register_cherry_type(cls, cherry, typ):
+    def register_cherry_type(cls, cherry, typ) -> None:
         cls._cherry_types[cherry] = typ
 
     @property
@@ -249,14 +252,14 @@ class CherryPicker(object):
             return self._parent
         raise AttributeError("Root node has no parent.")
 
-    def get(self):
+    def get(self) -> Any:
         """
         Obtain the original data that this object wraps.
         """
         return self._obj
 
-    def keys(self, peek=5):
+    def keys(self, peek=5) -> NoReturn:
         raise NotImplementedError()
 
-    def __getitem__(self, args):
+    def __getitem__(self, args) -> NoReturn:
         raise NotImplementedError()

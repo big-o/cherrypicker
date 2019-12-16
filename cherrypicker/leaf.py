@@ -2,6 +2,7 @@ from __future__ import division
 
 from .exceptions import LeafError
 from .picker import CherryPicker
+from typing import Any
 
 
 __all__ = ("CherryPickerLeaf",)
@@ -15,7 +16,7 @@ class CherryPickerLeaf(CherryPicker):
     return a result (with :meth:`.get`).
     """
 
-    def __new__(cls, obj, **kwargs):
+    def __new__(cls: "CherryPickerLeaf", obj, **kwargs) -> "CherryPickerLeaf":
         picker = super(CherryPicker, cls).__new__(cls)
         return picker
 
@@ -23,12 +24,12 @@ class CherryPickerLeaf(CherryPicker):
     def is_leaf(self):
         return True
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         if self._opts["on_leaf"] == "raise":
             raise LeafError()
         return self._obj.__getitem__(item)
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         if self._repr is not None:
             return self._repr
 
