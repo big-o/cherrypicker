@@ -10,6 +10,7 @@ code_root = Path(__file__).parent.parent
 def test_black():
     runner = CliRunner()
     result = runner.invoke(
-            black.main, [str(code_root / "tests"), str(code_root / "cherrypicker"), "--check"]
+        black.main,
+        [str(code_root / "tests"), str(code_root / "cherrypicker"), "--check"],
     )
     assert result.exit_code == 0, result.output

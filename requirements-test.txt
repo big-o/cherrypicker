@@ -2,5 +2,3 @@ click
 coverage
 pytest
 pytest-cov
-pytest-xdist
-tox
