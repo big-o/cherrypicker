@@ -1,0 +1,5 @@
+coverage
+pytest
+pytest-cov
+pytest-xdist
+tox
