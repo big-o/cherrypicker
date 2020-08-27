@@ -279,11 +279,12 @@ class CherryPickerMapping(CherryPickerTraversable):
         depth=0,
     ) -> Union[Dict[Any, Any], Dict]:
         """
-            Flatten json object with nested keys into a single level.
-            Args:
-                nested_json: A nested json object.
-            Returns:
-                The flattened json object if successful, None otherwise.
+        Flatten a json object with nested keys into a single level.
+
+        Args:
+            nested_json: A nested json object.
+        Returns:
+            The flattened json object if successful, None otherwise.
         """
         if flat is None:
             flat = {}
