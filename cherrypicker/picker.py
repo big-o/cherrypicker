@@ -1,9 +1,9 @@
 from __future__ import division
 
 from collections.abc import Iterable, Mapping
-from joblib import effective_n_jobs
 from typing import Any, Callable, List, NoReturn, Optional, Tuple, Union
 
+from joblib import effective_n_jobs
 
 __all__ = ("CherryPicker",)
 

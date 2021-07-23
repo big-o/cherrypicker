@@ -1,8 +1,8 @@
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
-import os
 import importlib.util
+import os
 
+from setuptools import find_packages, setup
 
 about = None
 for root, dirs, files in os.walk("."):

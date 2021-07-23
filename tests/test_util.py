@@ -1,6 +1,6 @@
-from cherrypicker.util import *
-
 import pytest
+
+from cherrypicker.util import *
 
 
 def test_orderedset():

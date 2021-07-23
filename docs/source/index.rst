@@ -96,9 +96,10 @@ custom functions. Read all about them in the :doc:`filter` documentation.
 Of course, it would be nice if we could extract data in the example above from
 both the base level and the ``info`` sub-level of each item and put them into a
 flat table, ready to load into your favourite data analysis package. We can do
-this in :mod:`cherrypicker` with :meth:`cherrypicker.CherryPickerMapping.flatten`.
-Let's say that each item in our data list has a city name and a list of average
-low/high temperatures for each month of the year:
+this conveniently in :mod:`cherrypicker` with the ``flat`` property of our picker
+which gives us a flattened view of the data. Let's say that each item in our data
+list has a city name and a list of average low/high temperatures for each month of the
+year:
 
 .. code-block:: python
 
@@ -132,17 +133,30 @@ monthly temperatures alongside each other:
 
 .. code-block:: python
 
-    >>> picker.flatten(
+    >>> picker.flat(
     ...     monthlyAvg_0_high=lambda tmp: tmp > 30
     ... )['city', 'monthlyAvg_0_high'].get()
     [['Bangkok', 33], ['Brasilia', 31], ['Ho Chi Minh City', 33], ...]
 
 .. code-block:: python
 
-    >>> picker.flatten(
+    >>> picker.flat(
     ...     monthlyAvg_0_high=lambda tmp: tmp < 0
     ... )['city', 'monthlyAvg_0_high'].get()
     [['Calgary', -1], ['Montreal', -4], ['Moscow', -4], ...]
+
+If you would like to customise the flattening behaviour, use the
+:meth:`cherrypicker.CherryPickerMapping.flatten` method instead:
+
+.. code-block:: python
+
+    >>> picker.flat[0].get()
+    {'id': 1, 'city': 'Amsterdam', 'country': 'Netherlands', 'monthlyAvg_0_high': 7, ...}
+
+.. code-block:: python
+
+    >>> picker.flatten(delim='.')[0].get()
+    {'id': 1, 'city': 'Amsterdam', 'country': 'Netherlands', 'monthlyAvg.0.high': 7, ...}
 
 One final point to note is that :mod:`cherrypicker` understands data by looking
 at its *interfaces* rather than its *types*. This means that it isn't just

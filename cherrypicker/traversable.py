@@ -1,15 +1,15 @@
 from __future__ import division
 
-from .picker import CherryPicker
-
+import re
 from collections.abc import Callable
 from fnmatch import fnmatchcase
 from functools import partial
 from itertools import chain
-from joblib import Parallel, delayed
-import re
 from typing import Any, Dict, Generator, NoReturn, Optional, Tuple, Union
 
+from joblib import Parallel, delayed
+
+from .picker import CherryPicker
 
 __all__ = ("CherryPickerIterable", "CherryPickerMapping", "CherryPickerTraversable")
 
@@ -214,6 +214,10 @@ class CherryPickerTraversable(CherryPicker):
         elif how == "all":
             return True
 
+    @property
+    def flat(self):
+        return self.flatten()
+
     def keys(self) -> NoReturn:
         raise NotImplementedError()
 
@@ -289,8 +293,10 @@ class CherryPickerMapping(CherryPickerTraversable):
         if flat is None:
             flat = {}
 
+        dlen = len(delim)
+
         if maxdepth is not None and depth > maxdepth:
-            flat[prefix[:-1]] = obj
+            flat[prefix[:-dlen]] = obj
             return flat
 
         ccls = cls._get_cherry_class(obj)
@@ -300,6 +306,7 @@ class CherryPickerMapping(CherryPickerTraversable):
                     obj[key],
                     flat,
                     prefix="{}{}{}".format(prefix, key, delim),
+                    delim=delim,
                     maxdepth=maxdepth,
                     depth=depth + 1,
                 )
@@ -310,16 +317,16 @@ class CherryPickerMapping(CherryPickerTraversable):
                     val,
                     flat,
                     prefix="{}{}{}".format(prefix, idx, delim),
+                    delim=delim,
                     maxdepth=maxdepth,
                     depth=depth + 1,
                 )
 
         else:
-            flat[prefix[:-1]] = obj
+            flat[prefix[:-dlen]] = obj
 
         return flat
 
-    @property
     def flatten(self, delim="_", maxdepth=100):
         """
         Flatten down the object so that all of its values are leaf nodes.
@@ -407,14 +414,13 @@ class CherryPickerIterable(CherryPickerTraversable):
             ccls = cls._get_cherry_class(item)
             if ccls is CherryPickerMapping:
                 flats.append(
-                    CherryPickerMapping._flatten(item, delim="_", maxdepth=100)
+                    CherryPickerMapping._flatten(item, delim=delim, maxdepth=100)
                 )
             else:
                 flats.append(item)
 
         return flats
 
-    @property
     def flatten(self, delim="_", maxdepth=100):
         with Parallel(self._effective_n_jobs) as parallel:
             flats = parallel(
