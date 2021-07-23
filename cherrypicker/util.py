@@ -1,7 +1,6 @@
 import collections.abc
 from typing import Any, Generator
 
-
 __all__ = ("OrderedSet",)
 
 

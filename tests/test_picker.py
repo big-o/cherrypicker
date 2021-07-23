@@ -1,9 +1,11 @@
-from cherrypicker import CherryPicker
-from cherrypicker.exceptions import *
 import json
 import os
-import pytest
 import re
+
+import pytest
+
+from cherrypicker import CherryPicker
+from cherrypicker.exceptions import *
 
 
 def abs_path(path):
@@ -67,10 +69,10 @@ def run_flatten_tests(n_jobs=None):
 
     fpicker = CherryPicker(first, n_jobs=n_jobs)
     picker = CherryPicker(data, n_jobs=n_jobs)
-    assert list(fpicker.flatten.keys()) == flat_keys
+    assert list(fpicker.flat.keys()) == flat_keys
     assert list(fpicker.flatten().keys()) == flat_keys
 
-    assert list(picker.flatten[0].keys()) == flat_keys
+    assert list(picker.flat[0].keys()) == flat_keys
     assert list(picker.flatten()[0].keys()) == flat_keys
 
 

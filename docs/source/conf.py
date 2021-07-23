@@ -18,13 +18,13 @@ import sys
 sys.path.insert(0, os.path.abspath("../../"))
 
 from cherrypicker.__about__ import (
-    __name__,
-    __title__,
-    __version__,
     __author__,
     __author_email__,
-    __release__,
     __description__,
+    __name__,
+    __release__,
+    __title__,
+    __version__,
 )
 
 # -- Project information -----------------------------------------------------

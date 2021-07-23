@@ -1,9 +1,9 @@
 from __future__ import division
 
-from .exceptions import LeafError
-from .picker import CherryPicker
 from typing import Any
 
+from .exceptions import LeafError
+from .picker import CherryPicker
 
 __all__ = ("CherryPickerLeaf",)
 
